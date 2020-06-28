@@ -10,9 +10,11 @@
     Sorties : 1 ou 0
 ***/
 int SiFichierExiste(char nom_fichier[]){
-    FILE *fichier;
+    FILE *fichier=NULL;
+	
     //tester l'existance d'un fichier avec la fonction prédefinie "fopen"
-    if (fichier = fopen(nom_fichier, "r")){
+	fichier = fopen(nom_fichier, "rb");
+    if (fichier != NULL){
         fclose(fichier);
         return 1;
     }
@@ -36,10 +38,13 @@ void list_disques(char d[20][20]){
         alpha=tab_disk[i];
         char alphaNull[2]={alpha,'\0'};
         strcat(prefix,alphaNull);
+		//tester l'existence du fichier 
         exist=SiFichierExiste(prefix);
         if (exist){
             strcpy(d[i],prefix);
-        }
+        }else{
+			break;
+		}
     }
 }
 /***
@@ -54,16 +59,19 @@ void lire_secteur(char disque_physique[],int num_secteur,unsigned char buffer[51
     fichier=fopen(disque_physique,"rb");
     if (fichier == NULL){
         printf("Erreur d'ouverture du disque physique %s",disque_physique);
+		exit(1);
     }else{
         //déplacement par rapport au début du fichier
         depl=fseek(fichier,secteur,SEEK_SET);
         if (depl != 0){
             printf("Erreur dans le déplacement");
+			exit(1);
         }else{
             //lecture du secteur
             lect=fread(buffer,512,1,fichier);
             if(lect<=0){
                 printf("Erreur de lecture , n = %d",lect);
+				exit(1);
             }
         }
     }
@@ -77,7 +85,6 @@ void afficher_secteur(char disque_physique[],int num_secteur){
     //appel pour la fonction de lecture de secteur
     unsigned char buffer[512];
     lire_secteur(disque_physique,num_secteur,buffer);
-    printf("%s \n",buffer);
     //récupération de la taille du buffer pour l'affichage
     size_t taille=sizeof(buffer);
     //un tableau pour mettre les caractères ascii pour l'affichage

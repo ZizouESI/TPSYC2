@@ -1,5 +1,5 @@
 #include <stdio.h>
-
+#include "TPSYC2.c"
 
 int main()
 {
