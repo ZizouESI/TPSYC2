@@ -1,2 +1,2 @@
 # TP Système d'exploitation 
-Systèmes de gestions des fichiers.
+Systèmes de gestion des fichiers.
