@@ -11,7 +11,6 @@
 ***/
 int SiFichierExiste(char nom_fichier[]){
     FILE *fichier=NULL;
-	
     //tester l'existance d'un fichier avec la fonction prédefinie "fopen"
 	fichier = fopen(nom_fichier, "rb");
     if (fichier != NULL){
@@ -38,7 +37,7 @@ void list_disques(char d[20][20]){
         alpha=tab_disk[i];
         char alphaNull[2]={alpha,'\0'};
         strcat(prefix,alphaNull);
-		//tester l'existence du fichier 
+		//tester l'existence du fichier
         exist=SiFichierExiste(prefix);
         if (exist){
             strcpy(d[i],prefix);
@@ -126,4 +125,62 @@ void afficher_secteur(char disque_physique[],int num_secteur){
 			}
 		}
 	}
+}
+/***
+    Afficher_fdel : Afficher les fichiers/répertoires de la partition spécifiée en entrée de type FAT32
+     en donnant pour chacun le nom en format court (nom en format long optionnel), sa taille en octets,
+     son N° du premier cluster dans la FAT et le nom du répertoire père.
+     Entrées: disque physique et la partition
+     Sorties: void
+***/
+void afficher_fdel(char disque_physique[20],int num_partition){
+    unsigned char secteur_boot[512];
+    unsigned char buffer[512];
+    char nom_partition[20];
+    int disque_physique_len=strlen(disque_physique);
+    char num_partition_str[2];
+    itoa(num_partition,num_partition_str,10);
+    strcat(disque_physique,num_partition_str);
+    // lecture du secteur boot
+    lire_secteur(disque_physique,1,secteur_boot);
+    //positionnement dans les différents paramètres de la partition FAT32
+    int16_t octets_par_secteur= *(int16_t *)(secteur_boot+11);
+    int8_t secteur_par_cluster= *(int8_t *)(secteur_boot+13);
+    int16_t secteur_resreve=*(int16_t *)(secteur_boot+14);
+    int8_t nombre_FAT= *(int8_t *)(secteur_boot+16);
+    int32_t secteurs_par_fat= * (int32_t *)(secteur_boot+36);
+    int32_t premier_cluster_rep_racine= *(int32_t *)(secteur_boot+ 44);
+    int32_t deplacement_fat= secteur_resreve * octets_par_secteur;
+    int32_t deplacement_vers_racine_rep= deplacement_fat + (nombre_FAT * secteurs_par_fat * octets_par_secteur);
+    printf("FAT's sont à %p \n",deplacement_fat);
+    printf("Racine des répertoire à %p \n ",deplacement_vers_racine_rep);
+    //lecture de la fat
+    lire_secteur(disque_physique,secteur_resreve+1,buffer);
+    int32_t cluster_actuel = premier_cluster_rep_racine;
+    const int maxClusters = 268435445 ;
+    //parcours des clusters
+    while(cluster_actuel < maxClusters){
+            printf("cluster = %p\n", cluster_actuel);
+            //parcours des seceurs dans le cluster
+            for(int i=0 ;i<secteur_par_cluster;i++){
+                int num_secteur=(deplacement_vers_racine_rep/512) + (cluster_actuel - premier_cluster_rep_racine) * secteur_par_cluster + i +1;
+                lire_secteur(disque_physique,num_secteur,buffer);
+                Entree_format_court* entree = (Entree_format_court*) buffer; //découpage du buffer par entrees
+                for(int j=0 ; j< 512/sizeof(Entree_format_court);j++){
+                    if(entree[j].nom_fichier[0] != '\0'){ //pas une entree libre
+                        if(entree[j].nom_fichier[0] != 0xE5){ //fichier non supprimé logiquement
+                            //TODO : nom répertoire père
+                            printf("Fichier existant -> Nom fichier :%s ,Extension :%s ,Taille :%u ,N° premier cluster :%u , Nom répertoire père :%s\n",entree[j].nom_fichier,entree[j].extension,entree[j].taille_fichier,entree[j].numero_premier_cluster_fat_pfort);
+                        }else{
+                            printf("Fichier supprimé -> Nom fichier :%s ,Extension :%s ,Taille :%u ,N° premier cluster :%u , Nom répertoire père :%s\n",entree[j].nom_fichier,entree[j].extension,entree[j].taille_fichier,entree[j].numero_premier_cluster_fat_pfort);
+                        }
+                    }
+                    lire_secteur(disque_physique,secteur_resreve+cluster_actuel*4/512+1,buffer);
+                    //calcul du cluster
+                    cluster_actuel=*(int32_t *) (buffer+((cluster_actuel*4)%512));
+                    printf("Cluster suivant est à l'adresse : %p",deplacement_fat+cluster_actuel*4);
+                }
+            }
+    }
+    printf("cluster = %p\n", cluster_actuel);
 }
