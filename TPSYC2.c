@@ -41,6 +41,7 @@ void list_disques(char d[20][20]){
         exist=SiFichierExiste(prefix);
         if (exist){
             strcpy(d[i],prefix);
+	    printf("%s \n",prefix);
         }else{
 			break;
 		}
@@ -129,7 +130,7 @@ void afficher_secteur(char disque_physique[],int num_secteur){
 /***
     Afficher_fdel : Afficher les fichiers/répertoires de la partition spécifiée en entrée de type FAT32
      en donnant pour chacun le nom en format court (nom en format long optionnel), sa taille en octets,
-     son N° du premier cluster dans la FAT et le nom du répertoire père.
+     son N° du premier cluster dans la FAT .
      Entrées: disque physique et la partition
      Sorties: void
 ***/
@@ -141,7 +142,7 @@ void afficher_fdel(char disque_physique[20],int num_partition){
     char num_partition_str[5];
     //itoa(num_partition,num_partition_str,10);
 	sprintf(num_partition_str,"%d",num_partition);
-    strcat(disque_physique,"");
+    strcat(disque_physique,num_partition_str);
     // lecture du secteur boot
     lire_secteur(disque_physique,0,secteur_boot);
     //positionnement dans les différents paramètres de la partition FAT32
@@ -158,7 +159,7 @@ void afficher_fdel(char disque_physique[20],int num_partition){
     //lecture de la fat
     lire_secteur(disque_physique,secteur_resreve,buffer);
     int32_t cluster_actuel = premier_cluster_rep_racine;
-    const int EOC = 0x0FFFFFF8 ;
+    const int EOC = 0x0FFFFFF8 ;//End Of Cluster
     //parcours des clusters
     while(cluster_actuel < EOC){
             printf("cluster = %p\n", cluster_actuel);
@@ -166,7 +167,7 @@ void afficher_fdel(char disque_physique[20],int num_partition){
             for(int i=0 ;i<secteur_par_cluster;i++){
                 int num_secteur=(deplacement_vers_racine_rep/512) + (cluster_actuel - premier_cluster_rep_racine) * secteur_par_cluster + i ;
                 lire_secteur(disque_physique,num_secteur,buffer);
-                Entree_format_court* entree = (Entree_format_court*) buffer; //découpage du buffer par entrees
+                Entree_format_court* entree = (Entree_format_court*) buffer; //découpage du buffer par entrées
                 for(int j=0 ; j< 512/sizeof(Entree_format_court);j++){
                     if(entree[j].nom_fichier[0] != '\0'){ //pas une entree libre
                         if(entree[j].nom_fichier[0] != 0xE5){ //fichier non supprimé logiquement
@@ -186,4 +187,5 @@ void afficher_fdel(char disque_physique[20],int num_partition){
             cluster_actuel=*(int32_t *) (buffer+((cluster_actuel*4)%512));
             printf("Cluster suivant est a l'adresse : %p \n",deplacement_fat+cluster_actuel*4);
     }
+	printf("@ Cluster de sortie : %p \n",cluster_actuel);
 }
