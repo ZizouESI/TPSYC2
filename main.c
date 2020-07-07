@@ -10,6 +10,6 @@ int main()
     afficher_secteur(disques_con[1],0); //secteur 0
 	printf("\nAffichage des repertoires et fichiers d'une partition :\n\n ");
     char disk[20]="/dev/sdb";
-    afficher_fdel(disk,1);
+    afficher_fdel(disk,5);
     return 0;
 }
